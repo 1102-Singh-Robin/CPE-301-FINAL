@@ -83,8 +83,7 @@ int resetButton = 6;    //Reset button
 volatile byte resetVal = HIGH;      //Reset Button
 
 void setup() {
-  Serial.begin(9600);
-  //U0init(9600);
+  U0init(9600);
   adc_init();
 
   *ddr_b |= 0x01 << 0;   //DC MOTOR   PB0
@@ -187,16 +186,19 @@ void dcMotor(int enable){
 //RTC function
 void realTimeClock(String s){
   dt = clock.getDateTime();
-  
-  Serial.print(dt.year);   Serial.print("-");
-  Serial.print(dt.month);  Serial.print("-");
-  Serial.print(dt.day);    Serial.print(" ");
-  Serial.print(dt.hour);   Serial.print(":");
-  Serial.print(dt.minute); Serial.print(":");
-  Serial.print(dt.second); Serial.print("  :");
-  Serial.println(s);
-  
-  //delay(100);
+  String str;
+  str += dt.year; str += "-"; 
+  str += dt.month; str += "-"; 
+  str += dt.day; str += " "; 
+  str += dt.hour; str += ":"; 
+  str += dt.minute; str += ":"; 
+  str += dt.second; str += "  :"; 
+  str += s; 
+  for(int i = 0; i < str.length(); i++){
+    U0putchar(str[i]);
+  }
+  U0putchar('\n');
+  my_delay(1024);
 }
 
 //Stepper function
@@ -212,10 +214,10 @@ void stepper(int speed){
 //Water Level function
 int waterLevel(){
   *port_h |= (0x01 << 4); // turn the sensor ON
-  //delay(10); // wait 10 milliseconds
+  my_delay(256); 
   value = adc_read(5); // read the analog value from sensor
   *port_h |= (0x01 << 4); // turn the sensor OFF
-  //delay(1000);
+  my_delay(256);
   return value;
 }
 
@@ -263,7 +265,7 @@ void stop(){
 void error(){
   resetVal = HIGH;
   while(resetVal == HIGH){
-    if(digitalRead(resetButton) == LOW){
+    if(!(*pin_p & 0x08)){
       *port_l |= (0x01 << 6);   //LED Red
       *port_l |= (0x01 << 5);   //LED Green
       *port_l |= (0x01 << 4);   //LED Blue
@@ -351,7 +353,7 @@ void U0putchar(unsigned char U0pdata)
   *myUDR0 = U0pdata;
 }
 
-void delay(unsigned int ticks){
+void my_delay(unsigned int ticks){
   *myTCCR1B &= 0xF8;
   *myTCNT1 = (unsigned int) (65536 - ticks);
 
